@@ -18,12 +18,14 @@ and installed-application validation.
 ## Technical description
 
 The application uses Python 3.12 and PySide6, with faster-whisper, an Ivrit.ai CTranslate2 model,
-and CPU int8 inference for local Hebrew STT. SQLAlchemy persists meetings, segments, transcript
-revisions, analyses, evidence links, and operation state in SQLite transactions. OpenAI Responses
-API Structured Outputs are parsed into strict Pydantic models; evidence IDs are validated against
-the exact source revision before the result and current-analysis pointer are committed. API keys
-are stored by keyring in Windows Credential Manager. PyInstaller and Inno Setup produce the
-standalone Windows distribution.
+and CPU int8 inference for local Hebrew STT. Speaker diarization is intentionally omitted in
+v0.1.0 to keep local transcription lightweight and compatible with a wider range of Windows PCs,
+including CPU-only systems. SQLAlchemy persists meetings, segments, transcript revisions,
+analyses, evidence links, and operation state in SQLite transactions. OpenAI Responses API
+Structured Outputs are parsed into strict Pydantic models; evidence IDs are validated against the
+exact source revision before the result and current-analysis pointer are committed. API keys are
+stored by keyring in Windows Credential Manager. PyInstaller and Inno Setup produce the standalone
+Windows distribution.
 
 ## Business/client description
 

@@ -41,6 +41,15 @@ flowchart LR
 | Credential service | Reads/writes the OpenAI API key through keyring and Windows Credential Manager |
 | Packaging | PyInstaller collects the runtime; Inno Setup creates the per-user Windows installer |
 
+## Deliberate diarization trade-off
+
+Speaker diarization is intentionally omitted in v0.1.0 to keep local transcription lightweight
+and compatible with a wider range of Windows PCs, including CPU-only systems. Adding diarization
+would require additional models and pipeline stages, increasing processing time, memory use,
+packaging complexity, and minimum hardware requirements. Sikumon prioritizes reliable local Hebrew
+speech-to-text on ordinary Windows PCs without requiring a dedicated GPU; the current transcript
+therefore preserves timestamps and segment order but does not assign speaker identities.
+
 ## Local data and transaction boundaries
 
 - Audio is copied into application-managed local storage with crash-consistent staging.

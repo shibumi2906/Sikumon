@@ -74,9 +74,11 @@ including launch, saved transcript access, copy/export, analysis views, settings
 ## Status and limitations
 
 Portfolio release **0.1.0** is functionally complete and available as a standalone installer.
-Current limitations: Windows x64 only; Hebrew-first UI/workflow; no speaker diarization; local STT
-model download requires disk space and an initial internet connection; OpenAI analysis requires a
-user-supplied API key and network access; the installer is not code-signed.
+Speaker diarization is intentionally omitted in v0.1.0 to keep local transcription lightweight
+and compatible with a wider range of Windows PCs, including CPU-only systems. Other limitations:
+Windows x64 only; Hebrew-first UI/workflow; the local STT model requires disk space and an initial
+internet connection; OpenAI analysis requires a user-supplied API key and network access; the
+installer is not code-signed.
 
 See the [portfolio overview](docs/portfolio/project-overview-en.md) and
 [release notes](docs/portfolio/release-notes.md).

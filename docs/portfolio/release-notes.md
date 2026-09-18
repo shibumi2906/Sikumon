@@ -57,7 +57,8 @@ were not rerun. The immediately preceding source validation baseline was: **169 
 ## Known limitations
 
 - Windows x64 only and Hebrew-first
-- No speaker diarization
+- Speaker diarization is intentionally omitted in v0.1.0 to keep local transcription lightweight
+  and compatible with a wider range of Windows PCs, including CPU-only systems
 - Initial local STT model download requires internet access and substantial disk space
 - AI analysis requires an internet connection, a user-supplied OpenAI API key, and account usage
 - Unsigned installer may trigger SmartScreen

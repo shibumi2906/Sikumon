@@ -1097,7 +1097,8 @@ ________________
 
 
 49. Speaker Identification
-Automatic speaker diarization is outside this product version.
+Speaker diarization is intentionally omitted in v0.1.0 to keep local transcription lightweight and compatible with a wider range of Windows PCs, including CPU-only systems.
+Adding diarization would increase model complexity, processing time, memory use, packaging complexity, and hardware requirements. This release prioritizes reliable local Hebrew STT on ordinary Windows PCs without requiring a dedicated GPU.
 Do not introduce:
 * pyannote;
 * speaker embeddings;
@@ -1995,7 +1996,7 @@ The following are explicitly outside this product version:
 * live microphone transcription;
 * real-time transcription;
 * recording audio inside Sikumon;
-* automatic speaker diarization;
+* automatic speaker diarization (intentionally omitted in v0.1.0 for broader CPU-only compatibility);
 * voice recognition;
 * calendar integration;
 * Google Calendar;

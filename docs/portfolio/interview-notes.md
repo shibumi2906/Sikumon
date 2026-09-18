@@ -34,6 +34,15 @@ The product needed a native Windows desktop UI, strong Unicode/RTL support, matu
 dialogs, threading primitives, and deterministic packaging. PySide6 allowed a single Python code
 base around the STT/AI ecosystem. The principal cost was native Qt deployment complexity.
 
+### Why no speaker diarization?
+
+Speaker diarization is intentionally omitted in v0.1.0 to keep local transcription lightweight
+and compatible with a wider range of Windows PCs, including CPU-only systems. A diarization
+pipeline would add models and processing stages, raising memory consumption, processing time,
+packaging complexity, and hardware requirements. For this release, reliable local Hebrew STT on
+ordinary PCs was a higher priority than speaker attribution; the transcript still preserves
+segment order and timestamps.
+
 ### Why SQLite?
 
 The data belongs to one local desktop user and needs transactions, referential integrity, queryable
@@ -89,6 +98,6 @@ without requiring Python or PySide6 on the target machine.
 
 ### What would come next?
 
-Code-signing is the highest-value release improvement. Product extensions could include
-diarization, search, configurable models, richer export, and accessibility testing, but they should
-be driven by user research rather than added to the portfolio release without evidence.
+Code-signing is the highest-value release improvement. Future product research could revisit
+speaker diarization if target hardware and user demand justify its runtime cost; other candidates
+include search, configurable models, richer export, and accessibility testing.

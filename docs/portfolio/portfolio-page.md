@@ -32,6 +32,8 @@ back to exact source segments.
 ## Key features
 
 - Local Hebrew STT with faster-whisper and a pinned Ivrit.ai CTranslate2 model
+- Deliberately no speaker diarization in v0.1.0, keeping local STT lightweight and compatible with
+  more Windows PCs, including CPU-only systems
 - Native RTL transcript editing with timestamps and revision-safe saves
 - Full-transcript copy plus UTF-8 TXT and SRT export
 - Structured Hebrew summary, decisions, and action items
@@ -81,6 +83,8 @@ Ruff · MyPy
 - Crash-consistent audio import, transactional transcript replacement/editing, revision tracking,
   and restart reconciliation
 - Lazy local STT model loading and lifecycle management
+- A deliberate CPU-first architecture that omits speaker diarization in v0.1.0 to avoid the
+  additional models, memory use, and hardware requirements it would introduce
 - Strict Structured Outputs analysis with one bounded correction retry and semantic evidence checks
 - Credential storage, privacy boundary, export formats, and local persistence
 - Reproducible Windows packaging, diagnosis of a Qt/ICU DLL conflict, installer creation, and

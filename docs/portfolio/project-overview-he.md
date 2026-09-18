@@ -16,10 +16,12 @@ Sikumon היא אפליקציית שולחן עבודה מלאה שתוכננה 
 ## תיאור טכני
 
 האפליקציה מבוססת Python 3.12 ו־PySide6. התמלול המקומי משתמש ב־faster-whisper, במודל Ivrit.ai
-בפורמט CTranslate2 ובחישוב CPU int8. נתוני פגישות, מקטעים, גרסאות תמלול, ניתוחים וקישורי ראיות
-נשמרים ב־SQLite באמצעות SQLAlchemy וטרנזקציות. OpenAI Responses API מחזיר Structured Outputs
-שנבדקים באמצעות Pydantic; מזהי הראיות נבדקים מול גרסת התמלול המדויקת לפני השמירה. המפתח נשמר
-באמצעות keyring ב־Windows Credential Manager. ההפצה נבנית עם PyInstaller ו־Inno Setup.
+בפורמט CTranslate2 ובחישוב CPU int8. בגרסה 0.1.0 הושמט במכוון זיהוי והפרדה בין דוברים, כדי
+לשמור על תמלול מקומי קל יחסית ולאפשר תאימות למגוון רחב יותר של מחשבי Windows, לרבות מערכות
+המבוססות על CPU בלבד. נתוני פגישות, מקטעים, גרסאות תמלול, ניתוחים וקישורי ראיות נשמרים
+ב־SQLite באמצעות SQLAlchemy וטרנזקציות. OpenAI Responses API מחזיר Structured Outputs שנבדקים
+באמצעות Pydantic; מזהי הראיות נבדקים מול גרסת התמלול המדויקת לפני השמירה. המפתח נשמר באמצעות
+keyring ב־Windows Credential Manager. ההפצה נבנית עם PyInstaller ו־Inno Setup.
 
 ## תיאור עסקי/ללקוח
 
