@@ -1,0 +1,2464 @@
+﻿Sikumon — Technical Specification
+1. Project Overview
+Sikumon is a standalone Windows desktop application designed primarily for the Israeli market.
+Its purpose is to process recorded Hebrew meetings and conversations through a local-first workflow:
+Hebrew audio → local transcription → editable timestamped transcript → cloud text analysis → decisions and tasks → evidence-linked results → local persistence
+The application must demonstrate the ability to build a complete AI-enabled desktop product specifically adapted to Hebrew-speaking users and Israeli-market requirements.
+Sikumon must not look or behave like:
+* a proof-of-concept;
+* a developer demo;
+* a chat interface wrapped around an LLM;
+* a thin API client;
+* a browser-based application;
+* an unfinished technical prototype.
+It must be a finished portfolio-quality Windows application that can be installed, launched, demonstrated, and used without a development environment.
+________________
+
+
+2. Product Positioning
+Sikumon is a Hebrew-first local meeting assistant.
+Its primary purpose is to transform recorded Hebrew meetings into structured, actionable information while keeping:
+* the original audio local;
+* Speech-to-Text processing local;
+* transcript storage local;
+* meeting data local.
+Only transcript text required for AI analysis may be sent to the configured cloud LLM provider.
+Core product characteristics:
+* Hebrew-first UX;
+* intentional RTL support;
+* local Hebrew Speech-to-Text;
+* no cloud audio transcription;
+* local meeting storage;
+* local transcript storage;
+* editable timestamped transcripts;
+* structured cloud AI meeting analysis;
+* extraction of meeting summaries;
+* extraction of decisions;
+* extraction of action items;
+* extraction of responsible persons only when supported by the transcript;
+* extraction of deadlines only when supported by the transcript;
+* evidence-linked AI results;
+* persistent Windows desktop storage;
+* no browser requirement;
+* no NVIDIA GPU requirement.
+Primary target users:
+* Hebrew-speaking professionals;
+* small businesses;
+* consultants;
+* project teams;
+* project managers;
+* users handling meeting recordings;
+* users who want meeting summaries while keeping original recordings local.
+Primary market:
+* Israel.
+________________
+
+
+3. Privacy Model
+Sikumon's privacy model must be technically accurate.
+The following remain local:
+* original meeting audio;
+* audio decoding;
+* Speech-to-Text processing;
+* transcript storage;
+* transcript edits;
+* SQLite database;
+* meeting metadata;
+* validated AI analysis stored by Sikumon.
+The only meeting content that may be sent to the configured LLM provider is transcript-related text required for analysis.
+The application must never send:
+* source audio;
+* decoded audio;
+* audio fragments;
+* local STT model files;
+* SQLite database files;
+* unrelated meetings;
+* arbitrary user files.
+The application must never claim that all processing is offline.
+Correct product positioning:
+Local Hebrew transcription and local meeting storage with optional cloud text analysis.
+A more concise user-facing formulation may be:
+Your audio stays on your computer. Only transcript text is sent for AI analysis.
+________________
+
+
+4. Product Goal
+The finished application must support the complete workflow below.
+1. User installs Sikumon on Windows.
+2. User launches Sikumon normally from Windows.
+3. Sikumon initializes local application storage and the SQLite database if necessary.
+4. User sees previously saved meetings.
+5. User creates a new meeting.
+6. User selects an existing Hebrew audio recording.
+7. User enters or edits the meeting title.
+8. Sikumon validates the selected media file.
+9. Sikumon copies the source media into Sikumon's local meeting storage.
+10. Sikumon creates the meeting database record.
+11. Sikumon checks whether the required Hebrew transcription model is installed.
+12. If the model is missing, the user is offered an in-application model download flow.
+13. The model is downloaded and verified.
+14. User starts transcription.
+15. Sikumon transcribes the recording locally using faster-whisper and the configured Ivrit.ai model.
+16. Transcription executes on the local CPU.
+17. The application remains responsive.
+18. Transcript segments containing stable IDs and timestamps are persisted.
+19. User reviews the Hebrew transcript.
+20. User corrects transcription errors segment by segment.
+21. User saves corrected transcript text.
+22. User starts meeting analysis.
+23. Sikumon sends structured transcript text and transcript segment identifiers to the configured OpenAI text model.
+24. Audio is never included in the request.
+25. OpenAI returns structured analysis.
+26. Sikumon validates the response using Pydantic.
+27. Sikumon validates all evidence segment IDs.
+28. Only a fully valid analysis becomes the current saved analysis.
+29. User sees:
+* meeting summary;
+* decisions;
+* action items;
+* responsible persons when supported;
+* deadlines when supported;
+* transcript evidence.
+30. User selects an evidence reference.
+31. Sikumon navigates to the corresponding transcript segment.
+32. User closes the application.
+33. User launches Sikumon again.
+34. Meeting data, transcript corrections, local audio reference, and analysis remain available.
+35. User may edit the transcript again.
+36. Existing analysis becomes visibly outdated.
+37. User may rerun analysis.
+38. A failed reanalysis does not destroy the previous valid analysis.
+39. User may permanently delete the meeting.
+40. Meeting deletion removes all local data belonging to that meeting.
+This workflow must function end-to-end.
+________________
+
+
+5. Target Platform
+Primary supported platform:
+* Windows 11;
+* x64.
+Application type:
+* native desktop application.
+Implementation language:
+* Python 3.12.x.
+The supported production runtime must not depend on:
+* separately installed Python;
+* Python IDE;
+* source repository;
+* terminal commands;
+* manual virtual environment activation;
+* Docker;
+* browser.
+The final user launches Sikumon as a normal installed Windows application.
+________________
+
+
+6. Target Test Machine
+Primary development and validation target:
+CPU: Intel Core i7-1355U
+RAM: 16 GB
+Discrete GPU: none
+OS: Windows 11 Pro
+Architecture: x64
+
+
+The application must not require:
+* NVIDIA GPU;
+* CUDA;
+* dedicated NPU;
+* dedicated AI accelerator.
+CPU execution is the required baseline.
+GPU acceleration is outside the required product scope.
+Real-time transcription is not required.
+The application may transcribe slower than real time.
+Priorities:
+1. correctness;
+2. stability;
+3. acceptable memory consumption;
+4. responsive UI;
+5. transcription speed.
+The implementation should avoid loading the complete decoded recording into RAM when a streaming or incremental decoding path is reasonably available.
+________________
+
+
+7. Fixed Technology Stack
+The implementation must use:
+* Python 3.12.x;
+* PySide6;
+* SQLite;
+* SQLAlchemy 2.x ORM;
+* Pydantic v2;
+* faster-whisper;
+* Ivrit.ai whisper-large-v3-turbo-ct2;
+* OpenAI Python SDK;
+* OpenAI Responses API;
+* OpenAI Structured Outputs / JSON Schema where supported by the configured analysis model;
+* httpx where direct HTTP functionality is needed;
+* pytest;
+* Python logging;
+* pathlib;
+* keyring for Windows Credential Manager integration;
+* PyInstaller for Windows application packaging.
+An installer-building solution such as Inno Setup may wrap the PyInstaller artifact in order to produce a normal Windows installer.
+No alternative application architecture should be introduced unless an actual technical blocker is documented.
+________________
+
+
+8. Prohibited Architecture
+Do not use:
+* Electron;
+* React;
+* Vue;
+* browser frontend;
+* embedded web frontend as the primary UI;
+* local web server;
+* cloud Speech-to-Text;
+* OpenAI audio transcription;
+* Windows Speech Recognition as STT replacement;
+* external transcription API;
+* hosted audio processing;
+* server backend;
+* PostgreSQL;
+* MySQL;
+* external database server;
+* Docker;
+* Redis;
+* Celery;
+* vector database;
+* RAG system.
+Sikumon must remain a self-contained native Windows desktop application.
+________________
+
+
+9. Local Hebrew Speech Recognition
+9.1 Required engine
+faster-whisper
+
+
+9.2 Required model
+ivrit-ai/whisper-large-v3-turbo-ct2
+
+
+Model source:
+Hugging Face / Ivrit.ai
+
+
+Model architecture:
+Whisper large-v3-turbo
+CTranslate2 format
+
+
+Language:
+Hebrew / he
+
+
+Application configuration must define the model centrally.
+Example:
+IVRIT_MODEL_ID = "ivrit-ai/whisper-large-v3-turbo-ct2"
+IVRIT_MODEL_REVISION = "<validated revision or commit>"
+TRANSCRIPTION_LANGUAGE = "he"
+
+
+Before a production release, IVRIT_MODEL_REVISION must be pinned to the exact revision used during final validation.
+The release must not depend on a mutable unpinned model revision.
+The same model identifiers must not be duplicated throughout the codebase.
+________________
+
+
+10. STT Model Integrity
+The implementation must never silently replace the required Ivrit.ai model with:
+* OpenAI Whisper API;
+* another cloud model;
+* another Hugging Face speech model;
+* generic Whisper weights;
+* Windows speech recognition.
+If the required model cannot be loaded, this is an explicit product error.
+Any incompatibility discovered during development must be documented and resolved explicitly rather than silently changing the architecture.
+________________
+
+
+11. CPU Transcription Configuration
+CPU-only operation is mandatory.
+Initial baseline:
+device = "cpu"
+compute_type = "int8"
+language = "he"
+
+
+If int8 proves unstable, incompatible, or materially harmful to transcription quality on the target machine, another CPU-compatible compute type may be selected after validation.
+The final configuration must:
+* work without CUDA;
+* work with 16 GB RAM;
+* complete real Hebrew transcription;
+* produce timestamps;
+* remain stable on the target machine.
+The chosen configuration must be centralized in configuration/constants.
+________________
+
+
+12. STT Model Installation
+The speech model must not require manual installation by the end user.
+At startup, Sikumon must determine whether the configured STT model is installed.
+If the model is missing, the application must clearly communicate that local transcription is unavailable until the model is installed.
+Conceptual UI:
+Hebrew transcription model is not installed.
+
+
+The model is required for local transcription.
+
+
+[Download model]
+
+
+________________
+
+
+13. Model Download Manager
+The model download process must support:
+* visible state;
+* progress where technically available;
+* retry;
+* cancellation;
+* interrupted-download recovery;
+* detection of incomplete downloads;
+* verification before marking the model available;
+* reuse after application restart.
+The download operation must never block the PySide6 main thread.
+Incomplete model data must be stored separately from the verified model.
+Conceptual structure:
+models\
+├── .downloads\
+│   └── <temporary-download>
+└── ivrit-whisper\
+    └── <verified-model-files>
+
+
+A partially downloaded model must never be treated as installed.
+________________
+
+
+14. Model Verification Contract
+A downloaded STT model is considered verified only when:
+* expected model files exist;
+* files are readable;
+* model metadata corresponds to the configured repository/revision where available;
+* faster-whisper can construct a WhisperModel from the local model directory.
+A full transcription test is not required on every application startup.
+Normal application startup must not load the complete STT model into RAM merely to check whether it exists.
+A lightweight file/integrity check is preferred during normal startup.
+________________
+
+
+15. Model Storage
+Required base location:
+%LOCALAPPDATA%\Sikumon\models\
+
+
+Model files must not be stored in:
+Program Files
+
+
+The model must not be downloaded again on every application launch.
+________________
+
+
+16. Audio Import
+Required supported media formats:
+* WAV;
+* MP3;
+* M4A;
+* FLAC.
+Recommended additional support:
+* AAC;
+* MP4 containing a supported audio stream.
+If ffmpeg is required, a compatible ffmpeg binary must be packaged with the application.
+The user must not be required to install ffmpeg manually.
+________________
+
+
+17. Audio Import Validation
+Before creating a successfully imported meeting, Sikumon must verify that:
+* selected path exists;
+* file can be opened;
+* usable audio stream exists;
+* format is supported;
+* decoding can begin successfully or duration can be obtained.
+Unsupported or corrupted media must result in a readable user-facing message.
+Example:
+This recording could not be opened.
+
+
+The file may be damaged or use an unsupported format.
+
+
+Raw decoder exceptions must not be shown to users.
+________________
+
+
+18. Local Audio Storage
+Imported recordings must be copied into Sikumon's local storage.
+Sikumon must not permanently depend on the source path selected by the user.
+Required structure:
+%LOCALAPPDATA%\Sikumon\
+│
+├── sikumon.db
+├── models\
+├── logs\
+├── cache\
+└── meetings\
+    └── <meeting-uuid>\
+        └── source_audio.<extension>
+
+
+After import, the meeting must continue working if the original file is:
+* renamed;
+* moved;
+* deleted;
+* disconnected from removable media.
+The imported copy becomes the application's authoritative media source.
+________________
+
+
+19. Meeting Import Transaction
+A meeting must not appear as successfully imported if copying the source recording fails.
+Recommended sequence:
+1. validate source;
+2. allocate meeting UUID;
+3. create temporary meeting directory;
+4. copy source recording;
+5. verify copied file;
+6. create database record;
+7. finalize local storage;
+8. expose meeting in UI.
+Failures must clean up temporary files where safe.
+________________
+
+
+20. Application Architecture
+Use modular architecture with explicit separation between:
+* UI;
+* application orchestration;
+* domain models;
+* persistence;
+* file storage;
+* audio handling;
+* transcription;
+* cloud analysis;
+* credentials;
+* configuration;
+* background jobs.
+Business logic must not be embedded directly inside PySide6 widgets.
+Widgets should primarily:
+* render application state;
+* collect user input;
+* emit user actions;
+* react to service/application results.
+________________
+
+
+21. Recommended Project Structure
+sikumon/
+│
+├── README.md
+├── SPEC.md
+├── pyproject.toml
+├── .gitignore
+├── .env.example
+│
+├── src/
+│   └── sikumon/
+│       ├── __init__.py
+│       ├── main.py
+│       │
+│       ├── config/
+│       │   ├── settings.py
+│       │   └── constants.py
+│       │
+│       ├── domain/
+│       │   ├── meeting.py
+│       │   ├── transcript.py
+│       │   ├── analysis.py
+│       │   └── enums.py
+│       │
+│       ├── database/
+│       │   ├── db.py
+│       │   ├── orm_models.py
+│       │   ├── repositories.py
+│       │   └── migrations.py
+│       │
+│       ├── storage/
+│       │   ├── paths.py
+│       │   └── file_storage.py
+│       │
+│       ├── security/
+│       │   └── credentials.py
+│       │
+│       ├── services/
+│       │   ├── audio/
+│       │   │   ├── importer.py
+│       │   │   └── metadata.py
+│       │   │
+│       │   ├── transcription/
+│       │   │   ├── provider.py
+│       │   │   ├── model_manager.py
+│       │   │   └── faster_whisper_ivrit.py
+│       │   │
+│       │   └── analysis/
+│       │       ├── provider.py
+│       │       ├── prompt_builder.py
+│       │       ├── schemas.py
+│       │       ├── evidence_validator.py
+│       │       └── openai_provider.py
+│       │
+│       ├── application/
+│       │   ├── meeting_service.py
+│       │   ├── transcription_service.py
+│       │   ├── analysis_service.py
+│       │   └── startup_recovery.py
+│       │
+│       ├── ui/
+│       │   ├── main_window.py
+│       │   ├── meeting_list.py
+│       │   ├── meeting_view.py
+│       │   ├── transcript_view.py
+│       │   ├── analysis_view.py
+│       │   ├── model_download_dialog.py
+│       │   └── settings_dialog.py
+│       │
+│       └── workers/
+│           ├── transcription_worker.py
+│           ├── model_download_worker.py
+│           └── analysis_worker.py
+│
+├── tests/
+│   ├── unit/
+│   ├── integration/
+│   └── smoke/
+│
+└── packaging/
+
+
+Exact filenames may be adjusted where justified.
+The architectural separation must remain.
+________________
+
+
+22. Meeting Domain Model
+Minimum fields:
+Meeting
+
+
+id
+title
+created_at
+updated_at
+
+
+original_filename
+audio_path
+audio_duration_seconds
+
+
+transcription_status
+transcript_created_at
+transcript_updated_at
+transcript_revision
+
+
+analysis_operation_status
+current_analysis_id
+
+
+Meeting ID:
+UUID
+
+
+Timestamps should be stored consistently.
+Recommended:
+UTC in database
+local formatting in UI
+
+
+transcript_revision must be an integer starting at zero or one according to a documented convention.
+________________
+
+
+23. Transcript Revision
+transcript_revision is the authoritative version identifier of transcript content.
+The revision must increase whenever persisted transcript content changes successfully.
+Examples:
+* first completed transcription creates revision 1;
+* user edits and saves transcript → revision 2;
+* another successful edit → revision 3.
+A failed save must not advance the revision.
+A retranscription that successfully replaces the transcript must create a new revision.
+Transcript freshness must not rely solely on timestamps.
+________________
+
+
+24. Transcription Status
+Required durable enum:
+TranscriptionStatus
+
+
+NOT_STARTED
+RUNNING
+COMPLETED
+FAILED
+
+
+These values represent persisted operation state.
+Do not persist derived UI conditions such as:
+READY_TO_TRANSCRIBE
+MODEL_MISSING
+
+
+Those must be computed from current application state.
+________________
+
+
+25. Analysis Operation Status
+Required durable enum:
+AnalysisOperationStatus
+
+
+NOT_STARTED
+RUNNING
+COMPLETED
+FAILED
+
+
+This enum represents the state of the most recent analysis operation.
+OUTDATED must not be stored as an operation state.
+Analysis freshness is a separate derived condition.
+________________
+
+
+26. Analysis Freshness
+An existing analysis is current when:
+current_analysis.source_transcript_revision
+==
+meeting.transcript_revision
+
+
+It is outdated when:
+current_analysis exists
+AND
+current_analysis.source_transcript_revision
+!=
+meeting.transcript_revision
+
+
+Conceptual derived value:
+analysis_is_outdated: bool
+
+
+The UI may display:
+Analysis outdated
+
+
+but this is not a persisted operation status.
+________________
+
+
+27. Model Availability State
+STT model availability is global application state.
+Conceptual values:
+ModelAvailability
+
+
+MISSING
+DOWNLOADING
+VERIFYING
+AVAILABLE
+FAILED
+
+
+This state belongs to the model manager.
+It does not belong to individual meetings.
+________________
+
+
+28. Derived UI Capabilities
+UI actions must be enabled through derived conditions.
+Example:
+can_transcribe =
+    meeting exists
+    AND meeting audio exists
+    AND model is available
+    AND transcription job is not running
+
+
+Example:
+can_analyze =
+    transcript contains at least one non-empty segment
+    AND analysis job is not running
+    AND OpenAI credentials are available
+
+
+Do not introduce durable database states merely to represent whether a button is enabled.
+________________
+
+
+29. Transcript Representation
+The canonical transcript must consist of ordered timestamped segments.
+Required model:
+TranscriptSegment
+
+
+id
+meeting_id
+position
+start_time_ms
+end_time_ms
+text
+created_at
+updated_at
+
+
+Example:
+seg_001
+
+
+00:00:02.120 → 00:00:06.840
+
+
+בוקר טוב, בואו נתחיל.
+
+
+The transcript must not exist only as one unstructured string.
+________________
+
+
+30. Transcript Segment IDs
+Segment IDs are stable evidence anchors.
+Once a successful transcription is persisted, the current UI must not allow the user to edit:
+* segment ID;
+* position;
+* start timestamp;
+* end timestamp.
+User correction changes only:
+text
+
+
+This preserves stable evidence references within one transcript revision.
+________________
+
+
+31. Transcript Editing Contract
+Transcript editing in this product version is segment-based.
+The user may:
+* edit segment text;
+* save segment text;
+* navigate between segments.
+The user may not manually:
+* split segments;
+* merge segments;
+* delete segments;
+* insert new segments;
+* reorder segments;
+* change timestamps.
+These operations are outside the current product scope.
+________________
+
+
+32. Transcript Display
+Conceptual transcript view:
+00:00:02
+בוקר טוב, בואו נתחיל.
+
+
+00:00:07
+היום אנחנו צריכים להחליט...
+
+
+Transcript controls must correctly support Hebrew RTL text.
+Timestamps remain visually readable as LTR technical values.
+________________
+
+
+33. Transcript Save Behavior
+Editing produces unsaved application state.
+The UI must clearly indicate unsaved changes.
+Saving transcript changes must:
+1. verify meeting still exists;
+2. persist changed segment text transactionally;
+3. update affected segment timestamps;
+4. update Meeting.transcript_updated_at;
+5. increment Meeting.transcript_revision.
+If saving fails:
+* previous persisted transcript remains intact;
+* revision does not advance.
+A change in transcript revision automatically makes an older current analysis outdated through the freshness rule.
+________________
+
+
+34. Analysis Version Model
+AI analysis must be stored as a versioned entity.
+Minimum model:
+MeetingAnalysis
+
+
+id
+meeting_id
+provider
+model
+prompt_version
+schema_version
+created_at
+source_transcript_revision
+summary
+
+
+Associated entities:
+Decision
+ActionItem
+EvidenceReference
+
+
+The meeting points to the current valid analysis through:
+current_analysis_id
+
+
+________________
+
+
+35. Analysis History
+The architecture must support multiple successful analysis records.
+The initial UI does not need to expose full analysis history.
+Required behavior:
+* current valid analysis is referenced through current_analysis_id;
+* failed analysis attempts do not overwrite the current valid analysis;
+* a new successfully validated analysis may replace current_analysis_id.
+Old successful analyses may be:
+* retained;
+* or cleaned up according to a documented policy.
+A valid current analysis must never be overwritten before its replacement has fully passed validation.
+________________
+
+
+36. OpenAI Analysis Provider
+The first supported cloud analysis provider is:
+OpenAI
+
+
+The architecture must expose a provider boundary.
+Example:
+class AnalysisProvider(Protocol):
+    def analyze(
+        self,
+        transcript: list[TranscriptSegmentInput],
+    ) -> MeetingAnalysisResult:
+        ...
+
+
+Initial implementation:
+OpenAIAnalysisProvider
+
+
+Future providers may be added without changing transcript storage or meeting-domain architecture.
+________________
+
+
+37. OpenAI API Contract
+Use:
+OpenAI Responses API
+
+
+Structured response generation should use:
+JSON Schema Structured Outputs
+
+
+when supported by the configured OpenAI analysis model.
+Do not:
+* request arbitrary prose containing JSON;
+* extract JSON from Markdown code blocks;
+* use fragile free-form JSON parsing.
+Pydantic remains the authoritative application-side validator regardless of provider-side structured output support.
+________________
+
+
+38. Analysis Model Configuration
+The application must not hard-code one specific OpenAI model as an immutable product requirement.
+Configuration example:
+DEFAULT_ANALYSIS_PROVIDER = "openai"
+DEFAULT_ANALYSIS_MODEL = "<validated OpenAI text model>"
+ANALYSIS_PROMPT_VERSION = "1"
+ANALYSIS_SCHEMA_VERSION = "1"
+
+
+The initial default analysis model must be selected during implementation and validated against representative Hebrew meeting transcripts.
+Selection criteria:
+* Hebrew comprehension;
+* quality of summary;
+* decision extraction quality;
+* action-item extraction quality;
+* assignee accuracy;
+* deadline accuracy;
+* evidence-ID accuracy;
+* structured-output reliability;
+* API cost;
+* acceptable latency.
+The chosen production default must be documented before release.
+The model name must be defined centrally and must not be scattered through the codebase.
+Changing the configured analysis model must not require database redesign.
+________________
+
+
+39. Optional Model Selection
+The Settings dialog may allow the user to choose among supported OpenAI text models.
+This is optional for the first version.
+If implemented:
+* only explicitly supported models should be shown;
+* unsupported arbitrary model strings should not be encouraged in normal UI;
+* changing model must not change persistence architecture.
+________________
+
+
+40. Provider-Side Storage
+Where supported by the selected OpenAI request flow, Sikumon should disable provider-side response storage unless required for application functionality.
+Conceptual option:
+store = false
+
+
+Sikumon remains responsible for its own local storage of validated analysis results.
+________________
+
+
+41. LLM Input Format
+The analysis request must send ordered transcript segments.
+Conceptual form:
+[seg_001]
+start: 00:00:02.120
+end: 00:00:06.840
+text: ...
+
+
+[seg_002]
+start: 00:00:06.840
+end: 00:00:14.010
+text: ...
+
+
+The LLM must receive segment IDs exactly as stored locally.
+Speaker identities must not be fabricated.
+________________
+
+
+42. Analysis Prompt Requirements
+The analysis instruction must explicitly require the model to:
+* analyze only the supplied transcript;
+* produce the summary in Hebrew;
+* identify only decisions supported by the transcript;
+* identify only action items supported by the transcript;
+* never invent people;
+* never invent deadlines;
+* never invent decisions;
+* never invent tasks;
+* use null when an assignee cannot be established;
+* use null when a deadline cannot be established;
+* return empty lists when no valid items exist;
+* use only supplied segment IDs for evidence;
+* attach evidence to every decision;
+* attach evidence to every action item;
+* follow the supplied structured-output schema.
+The prompt must be versioned.
+Example:
+ANALYSIS_PROMPT_VERSION = "1"
+
+
+________________
+
+
+43. Structured Analysis Schema
+Conceptual Pydantic schema:
+from pydantic import BaseModel
+
+
+
+
+class Evidence(BaseModel):
+    segment_ids: list[str]
+
+
+
+
+class Decision(BaseModel):
+    title: str
+    description: str | None = None
+    evidence: Evidence
+
+
+
+
+class ActionItem(BaseModel):
+    title: str
+    description: str | None = None
+    assignee: str | None = None
+    deadline: str | None = None
+    evidence: Evidence
+
+
+
+
+class MeetingAnalysisPayload(BaseModel):
+    summary: str
+    decisions: list[Decision]
+    action_items: list[ActionItem]
+
+
+The production schema may add fields where justified but must not weaken validation.
+________________
+
+
+44. Evidence Requirements
+Every extracted decision and action item must contain at least one supporting transcript segment ID.
+A result containing empty evidence for a decision or action item is invalid.
+Summary text does not require per-sentence evidence in the current version.
+________________
+
+
+45. Evidence Validation
+After Pydantic parsing, Sikumon must perform semantic evidence validation.
+Each evidence segment ID must:
+* exist;
+* belong to the current meeting;
+* belong to the transcript revision being analyzed.
+Required handling:
+1. receive structured response;
+2. validate schema;
+3. validate segment IDs;
+4. if invalid, perform at most one controlled correction retry;
+5. validate corrected result;
+6. if still invalid, mark the analysis attempt failed;
+7. preserve previous valid current analysis.
+Do not silently discard invalid evidence IDs.
+________________
+
+
+46. Hallucination Rules
+The application must prefer absent information over fabricated information.
+If responsible person cannot be determined:
+assignee = null
+
+
+If deadline is absent:
+deadline = null
+
+
+If no decisions exist:
+"decisions": []
+
+
+If no tasks exist:
+"action_items": []
+
+
+The model must not convert assumptions into structured facts.
+________________
+
+
+47. Deadline Interpretation
+Deadlines may be extracted when explicitly present.
+Examples:
+מחר
+ביום ראשון
+עד סוף השבוע
+15 בספטמבר
+
+
+The application may preserve deadlines as human-readable text.
+Automatic conversion into calendar dates is outside the current scope.
+The LLM must not invent a deadline based solely on urgency.
+________________
+
+
+48. Responsible Person Interpretation
+Responsible persons may be extracted when supported by transcript text.
+Example:
+דוד, אתה תשלח את החוזה מחר.
+
+
+Valid assignee:
+דוד
+
+
+Example:
+אני אשלח את החוזה מחר.
+
+
+If speaker identity is unknown:
+assignee = null
+
+
+Speaker identity must never be invented.
+________________
+
+
+49. Speaker Identification
+Automatic speaker diarization is outside this product version.
+Do not introduce:
+* pyannote;
+* speaker embeddings;
+* voice identification;
+* external diarization API;
+* speaker-recognition models;
+* extra authentication requirements for diarization.
+The transcript is timestamped but not automatically speaker-labelled.
+________________
+
+
+50. Large Transcript Handling
+The application must never silently truncate a transcript.
+Before analysis, the application should conservatively determine whether the transcript can be sent safely in one request to the configured analysis model.
+For the initial product version:
+* normal meetings are analyzed in a single request;
+* automatic hierarchical/chunked analysis is not required;
+* no transcript content may be silently discarded.
+If a transcript exceeds the supported request size, analysis must stop with a clear user-facing message.
+Conceptual example:
+This transcript is too large to analyze with the currently selected AI model.
+
+
+The transcript is saved and has not been modified.
+
+
+Automatic multi-stage chunked meeting analysis is outside the initial required scope.
+The architecture should not make future addition of chunking impossible.
+________________
+
+
+51. Main User Interface
+The main application must use a desktop productivity layout.
+Conceptual structure:
+┌────────────────────────────────────────────────────────────────┐
+│ Sikumon                                           הגדרות      │
+├──────────────────┬─────────────────────────────────────────────┤
+│ פגישות           │ Meeting title                               │
+│                  │                                             │
+│ + פגישה חדשה     │ תמלול | סיכום | החלטות | משימות           │
+│                  │                                             │
+│ Meeting A        │                                             │
+│ Meeting B        │                                             │
+│ Meeting C        │                                             │
+│                  │                                             │
+└──────────────────┴─────────────────────────────────────────────┘
+
+
+The central experience must not be a chatbot.
+Do not use chat bubbles as the primary interaction model.
+________________
+
+
+52. Hebrew-First UI
+The production interface is Hebrew-first.
+Hebrew must be used for:
+* main navigation;
+* meeting creation;
+* transcript actions;
+* analysis actions;
+* settings labels;
+* user-facing errors;
+* empty states;
+* destructive confirmations.
+Internal implementation elements may remain in English:
+* source code;
+* developer logs;
+* technical exception details.
+________________
+
+
+53. RTL Requirements
+RTL support must be intentional and component-specific.
+Required behavior:
+* Hebrew labels use correct RTL presentation;
+* Hebrew transcript text uses RTL;
+* Hebrew analysis text uses RTL;
+* Hebrew editable fields use correct direction;
+* numbers remain readable;
+* timestamps remain readable;
+* filesystem paths remain LTR;
+* API/model identifiers remain LTR;
+* mixed Hebrew/English remains usable.
+Do not rely exclusively on one global Qt RightToLeft setting.
+Relevant components must be tested with mixed-direction content.
+________________
+
+
+54. Meeting List
+Meeting list must load from SQLite.
+Each meeting entry must show at minimum:
+* title;
+* creation or meeting date;
+* meaningful user-facing processing state.
+Possible derived user-facing states:
+Imported
+Transcribing
+Transcript ready
+Analyzing
+Analysis ready
+Analysis outdated
+Error
+
+
+These labels may be derived from durable state and current application conditions.
+________________
+
+
+55. New Meeting Flow
+User must be able to:
+1. choose recording;
+2. enter or edit meeting title;
+3. confirm import.
+Default title may be generated from:
+* source filename;
+* current date.
+After successful import:
+* local audio exists;
+* database record exists;
+* meeting appears in the list.
+________________
+
+
+56. Transcription Workflow
+When transcription starts:
+1. verify meeting exists;
+2. verify local source audio exists;
+3. verify model is available;
+4. prevent second transcription for the same meeting;
+5. set transcription_status = RUNNING;
+6. run STT in background;
+7. produce ordered timestamped segments;
+8. persist transcript transactionally;
+9. set or increment transcript revision;
+10. update transcript timestamps;
+11. set transcription_status = COMPLETED.
+On failure:
+transcription_status = FAILED
+
+
+A previous valid transcript must not be destroyed merely because a retranscription attempt failed.
+________________
+
+
+57. Retranscription
+Retranscription is not required in the primary UI for the initial version.
+If implemented:
+* existing transcript must remain available until replacement transcription completes successfully;
+* replacement transcript must produce a new transcript revision;
+* existing analysis automatically becomes outdated;
+* evidence tied to the previous transcript revision must not be treated as evidence for the new revision.
+________________
+
+
+58. Background Processing
+The following must never execute on the PySide6 main UI thread:
+* STT model download;
+* STT model verification when expensive;
+* perceptibly slow model loading;
+* transcription;
+* OpenAI network calls;
+* long audio inspection/decoding.
+Use appropriate Qt worker/thread mechanisms.
+Worker results must be safely marshalled to the UI thread.
+________________
+
+
+59. Concurrency Rules
+For a single meeting:
+* only one transcription job may run at a time;
+* only one analysis job may run at a time.
+The application may globally restrict transcription to one active STT job to limit CPU and memory pressure.
+Incompatible simultaneous operations must be disabled or rejected cleanly.
+________________
+
+
+60. Deletion During Background Work
+Meeting deletion must be disabled while that meeting has an active:
+* transcription operation;
+* analysis operation.
+The user may cancel the active operation where cancellation is supported and then delete the meeting after state normalization.
+Do not implement unnecessarily complex delete-while-worker-running behavior.
+________________
+
+
+61. Transcription Cancellation
+Transcription cancellation is required.
+Cancellation must be cooperative and safe.
+On cancellation:
+* source audio remains intact;
+* existing saved transcript remains intact;
+* incomplete new transcript does not replace a valid previous transcript;
+* database remains consistent.
+If no previous transcript exists, the meeting returns to a clean recoverable transcription state.
+________________
+
+
+62. Model Download Cancellation
+Model download cancellation is required.
+Cancellation must:
+* stop the active download;
+* never mark partial data as a valid model;
+* preserve or remove partial data according to a deterministic policy;
+* allow clean retry.
+________________
+
+
+63. Analysis Workflow
+Analysis sequence:
+1. ensure transcript exists;
+2. ensure at least one non-empty segment exists;
+3. ensure OpenAI API credentials are available;
+4. capture transcript_revision;
+5. set analysis_operation_status = RUNNING;
+6. build structured request;
+7. call OpenAI Responses API;
+8. receive structured response;
+9. validate with Pydantic;
+10. validate evidence references;
+11. optionally perform one controlled correction retry;
+12. persist fully valid analysis transactionally;
+13. save its source_transcript_revision;
+14. set it as current_analysis_id;
+15. set analysis_operation_status = COMPLETED.
+A partially validated analysis must never become current.
+________________
+
+
+64. Analysis Re-run
+Users must be able to rerun analysis:
+* after transcript correction;
+* after analysis failure;
+* manually.
+When reanalysis begins:
+* previous valid analysis remains stored;
+* previous valid analysis remains viewable where practical.
+Only after the replacement passes all validation may it become current_analysis_id.
+Failure must preserve the previous current analysis.
+________________
+
+
+65. Settings Dialog
+Required settings:
+* OpenAI API key;
+* configured OpenAI analysis model;
+* local Hebrew transcription model status.
+Recommended informational settings:
+* STT model location;
+* application data folder;
+* log folder;
+* active transcription compute type.
+Technical options must not clutter the main interface.
+________________
+
+
+66. API Key Security
+Production API key must be stored through Windows Credential Manager using keyring or equivalent OS credential integration.
+API key must never be stored in plaintext in:
+* SQLite;
+* ordinary settings JSON;
+* meeting directories;
+* transcripts;
+* logs;
+* source code.
+Development .env support is acceptable.
+.env must not be required for normal production use.
+The key must never appear in application logs.
+________________
+
+
+67. Missing API Key Behavior
+If the user attempts analysis without configured credentials:
+* transcription remains available;
+* transcript editing remains available;
+* saved analysis remains viewable;
+* application shows a clear settings action.
+Example:
+An OpenAI API key is required for meeting analysis.
+
+
+[Open Settings]
+
+
+Production UI must use Hebrew.
+________________
+
+
+68. Offline Behavior
+Without internet, the user must still be able to:
+* launch Sikumon;
+* browse existing meetings;
+* import supported recordings;
+* transcribe if the STT model is already installed;
+* view transcripts;
+* edit transcripts;
+* save transcripts;
+* view previous analyses;
+* delete meetings.
+Internet is required only for:
+* model download when the STT model is missing;
+* cloud transcript analysis.
+Cloud failure must never disable local transcription functionality.
+________________
+
+
+69. OpenAI Error Handling
+At minimum handle:
+* no network;
+* DNS failure;
+* connection timeout;
+* read timeout;
+* HTTP 401;
+* HTTP 403;
+* HTTP 429;
+* HTTP 5xx;
+* SDK/network exception;
+* incomplete response;
+* refusal where exposed by the API;
+* schema mismatch;
+* Pydantic validation failure;
+* invalid evidence references.
+Every error must lead to a recoverable application state.
+________________
+
+
+70. User-Facing Error Handling
+Normal users must never see raw Python tracebacks.
+Errors must be concise and actionable.
+Developer details belong in logs.
+Example:
+Meeting analysis could not be completed.
+
+
+Your transcript is safe.
+
+
+Please check your internet connection and try again.
+
+
+Production UI must use Hebrew.
+________________
+
+
+71. Persistence
+SQLite is the authoritative local structured data store.
+The following must survive restart:
+* meetings;
+* titles;
+* original filenames;
+* local audio paths;
+* audio duration;
+* transcription status;
+* transcript revision;
+* transcript segments;
+* transcript edits;
+* transcript timestamps;
+* analysis operation status;
+* analysis records;
+* decisions;
+* action items;
+* evidence references;
+* provider/model metadata;
+* analysis timestamps;
+* current analysis reference.
+________________
+
+
+72. Database Transactions
+Operations affecting several related records must be transactional.
+Examples:
+* initial meeting creation;
+* transcript replacement;
+* transcript edit save;
+* analysis creation;
+* meeting deletion.
+The database must not expose partially persisted analyses.
+________________
+
+
+73. Database Schema Versioning
+The database must contain an explicit schema version.
+Example:
+schema_version
+
+
+Alembic is not required for the initial release.
+A lightweight deterministic migration mechanism is acceptable.
+Requirements:
+* first-run creation is automatic;
+* future schema changes can be applied programmatically;
+* users must not be required to delete their database to update the application.
+________________
+
+
+74. Startup Recovery
+On application startup, Sikumon must detect stale durable states left by interrupted execution.
+Examples:
+transcription_status = RUNNING
+
+
+or:
+analysis_operation_status = RUNNING
+
+
+No worker is assumed to survive process termination.
+Startup recovery must normalize these states into recoverable values.
+A reasonable default:
+RUNNING → FAILED
+
+
+The user must then be able to retry.
+________________
+
+
+75. Missing Local Audio Recovery
+If a meeting exists in SQLite but the local recording is unexpectedly missing:
+* application still loads;
+* transcript remains accessible;
+* previous analysis remains accessible;
+* meeting displays a warning;
+* transcription/retranscription actions requiring audio are disabled.
+The application must not crash while loading the meeting list.
+________________
+
+
+76. Meeting Deletion
+Deletion requires explicit confirmation.
+Example:
+Delete this meeting?
+
+
+This will permanently remove the recording, transcript and analysis stored by Sikumon.
+
+
+[Cancel] [Delete]
+
+
+Deletion removes:
+* meeting database row;
+* transcript segments;
+* analyses;
+* decisions;
+* action items;
+* evidence records;
+* meeting-local audio;
+* meeting-specific cached files.
+Deletion must not remove:
+* global STT model;
+* global settings;
+* credentials;
+* other meetings.
+Missing meeting files must not prevent database cleanup.
+________________
+
+
+77. Logging
+Use standard Python logging.
+Recommended:
+* rotating log files.
+Location:
+%LOCALAPPDATA%\Sikumon\logs\
+
+
+Logs should capture:
+* startup;
+* application version;
+* database initialization;
+* schema migration;
+* model discovery;
+* model download;
+* model loading;
+* transcription lifecycle;
+* decoding failures;
+* OpenAI request lifecycle;
+* HTTP status category;
+* validation failures;
+* worker crashes;
+* startup recovery.
+________________
+
+
+78. Sensitive Logging Rules
+Logs must not contain by default:
+* API keys;
+* authentication headers;
+* full transcripts;
+* raw audio;
+* complete OpenAI request body;
+* complete OpenAI response body.
+Allowed diagnostic metadata includes:
+meeting_id
+segment_count
+audio_duration
+STT model ID
+analysis model ID
+operation duration
+HTTP status
+exception type
+
+
+________________
+
+
+79. Application Data Locations
+Required base directory:
+%LOCALAPPDATA%\Sikumon\
+
+
+Recommended layout:
+%LOCALAPPDATA%\Sikumon\
+│
+├── sikumon.db
+├── models\
+├── meetings\
+├── logs\
+└── cache\
+
+
+Application binaries and user data must remain separate.
+No user-writable database or meeting data should be stored under Program Files.
+________________
+
+
+80. Packaging
+Production application must be packaged with PyInstaller.
+Preferred final artifact:
+SikumonSetup.exe
+
+
+Installer must:
+1. install Sikumon;
+2. create a normal Windows application entry;
+3. optionally create a desktop shortcut;
+4. allow launch without terminal;
+5. include required runtime dependencies;
+6. include ffmpeg if required;
+7. not necessarily include the large STT model when model download is handled by Sikumon.
+________________
+
+
+81. PyInstaller Requirements
+Packaging must include runtime dependencies required for:
+* PySide6;
+* SQLAlchemy;
+* Pydantic;
+* faster-whisper;
+* CTranslate2;
+* OpenAI SDK;
+* keyring;
+* media decoding.
+The packaged application must be tested on a Windows environment where:
+* source repository is absent;
+* Python is not separately required;
+* virtual environment is absent.
+A development-machine-only successful launch is insufficient.
+________________
+
+
+82. Application Version
+Sikumon must have a centrally defined application version.
+Example:
+0.1.0
+
+
+The version should be available:
+* in package metadata;
+* in logs;
+* preferably in About or Settings UI.
+________________
+
+
+83. Testing Strategy
+Use pytest.
+Required structure:
+tests/
+├── unit/
+├── integration/
+└── smoke/
+
+
+Normal automated tests must not require real OpenAI network access.
+________________
+
+
+84. Unit Tests
+At minimum:
+* transcription state transitions;
+* analysis operation state transitions;
+* transcript revision increment;
+* transcript segment creation;
+* stable segment ID handling;
+* transcript editing;
+* analysis freshness calculation;
+* Pydantic validation;
+* invalid evidence detection;
+* prompt generation;
+* analysis input construction;
+* oversized transcript rejection;
+* invalid structured response behavior;
+* repository operations;
+* application path handling;
+* model manager state transitions;
+* startup stale-state normalization.
+________________
+
+
+85. Integration Tests
+At minimum:
+* SQLite initialization;
+* meeting create/save/reload;
+* audio metadata persistence;
+* transcript save/reload;
+* transcript edit/reload;
+* transcript revision persistence;
+* analysis save/reload;
+* evidence save/reload;
+* transcript edit makes current analysis outdated;
+* successful reanalysis becomes current;
+* failed reanalysis preserves previous current analysis;
+* meeting deletion removes associated records;
+* mocked OpenAI Responses API workflow;
+* mocked schema validation failure;
+* mocked invalid evidence response.
+________________
+
+
+86. Smoke Tests
+At minimum:
+* application imports successfully;
+* database initializes;
+* main window can be constructed;
+* settings dialog can be constructed;
+* new meeting flow can be opened;
+* saved meetings load;
+* application closes without unhandled errors.
+________________
+
+
+87. Real STT Validation
+At least one real Hebrew audio sample must be used during development and final validation.
+Required evidence:
+* model downloads;
+* model loads;
+* CPU transcription executes;
+* Hebrew text is produced;
+* timestamps are produced;
+* segments are stored;
+* transcript displays in UI;
+* Hebrew text can be edited;
+* edit survives restart.
+Target machine:
+Intel Core i7-1355U
+16 GB RAM
+No discrete GPU
+Windows 11 Pro
+
+
+Absence of CUDA must not cause failure.
+________________
+
+
+88. Analysis Model Validation Before Release
+Before production release, the chosen default OpenAI analysis model must be validated using representative Hebrew meeting transcripts.
+Validation should cover:
+* summary accuracy;
+* Hebrew quality;
+* decision extraction;
+* action-item extraction;
+* assignee handling;
+* deadline handling;
+* evidence references;
+* Structured Output reliability;
+* latency;
+* cost.
+The final default model must then be recorded in release documentation/configuration.
+This model choice is an implementation validation decision, not a permanent architectural requirement.
+________________
+
+
+89. STT Release Validation
+Before final release, record:
+* exact Ivrit.ai repository ID;
+* exact model revision/commit;
+* faster-whisper version;
+* CTranslate2 version;
+* compute type;
+* Python version used for build.
+These belong in project documentation or release metadata.
+________________
+
+
+90. UI Quality Requirements
+The application must feel like a finished desktop product.
+Required:
+* consistent typography;
+* consistent spacing;
+* visually coherent controls;
+* readable Hebrew;
+* clear disabled states;
+* clear loading states;
+* useful progress indication;
+* sensible empty states;
+* destructive confirmation;
+* no exposed debug controls;
+* no raw JSON as primary presentation;
+* no raw traceback presentation;
+* responsive UI;
+* visual distinction between transcript and analysis.
+________________
+
+
+91. Transcription Progress UI
+Exact percentage progress is preferred when technically reliable.
+If reliable percentage is unavailable, use:
+* indeterminate progress;
+* elapsed processing indication;
+* active status text.
+The user must clearly understand that transcription is still active.
+________________
+
+
+92. Analysis Progress UI
+During cloud analysis, show a clear non-blocking state.
+Example:
+Analyzing meeting…
+
+
+The user must not be able to start another analysis for the same meeting until the current operation finishes.
+________________
+
+
+93. Analysis Presentation
+Primary analysis sections:
+תמלול
+סיכום
+החלטות
+משימות
+
+
+Conceptual English equivalents:
+Transcript
+Summary
+Decisions
+Tasks
+
+
+Do not present the primary analysis result as one large generated prose response.
+________________
+
+
+94. Decision Presentation
+Each decision should display:
+* title;
+* optional description;
+* evidence link.
+Conceptual example:
+Decision:
+Move to the new supplier
+
+
+Evidence:
+00:18:24
+
+
+Production UI uses Hebrew.
+Selecting evidence navigates to the supporting segment.
+________________
+
+
+95. Task Presentation
+Each task should display:
+* task title;
+* optional description;
+* responsible person or empty value;
+* deadline or empty value;
+* evidence.
+Conceptual example:
+Task:
+Send the updated contract
+
+
+Responsible:
+David
+
+
+Deadline:
+Sunday
+
+
+Evidence:
+00:18:24
+
+
+________________
+
+
+96. Evidence Navigation
+Selecting evidence must:
+1. activate/open the Transcript tab if necessary;
+2. scroll to the referenced segment;
+3. visibly highlight that segment.
+Evidence display may show:
+* timestamp;
+* text preview.
+Canonical linkage remains the segment ID.
+________________
+
+
+97. Empty Analysis States
+Empty lists are valid data.
+Examples:
+No decisions were identified in this meeting.
+
+
+No action items were identified in this meeting.
+
+
+Production UI must use Hebrew equivalents.
+________________
+
+
+98. Empty Application State
+On first launch with no meetings, display an intentional empty state.
+Conceptual example:
+No meetings yet.
+
+
+Import a Hebrew recording to get started.
+
+
+[New Meeting]
+
+
+Production UI must use Hebrew.
+________________
+
+
+99. Accessibility and Usability Basics
+The application should support:
+* readable default font size;
+* keyboard focus;
+* standard Windows keyboard behavior;
+* selectable transcript text;
+* resizable main window;
+* reasonable minimum window size.
+Advanced accessibility certification is outside current scope.
+________________
+
+
+100. Performance Requirements
+No strict real-time transcription target is required.
+Required characteristics:
+* main UI remains interactive during processing;
+* meeting list loads promptly for normal datasets;
+* opening an existing transcript does not unnecessarily load the STT model;
+* STT model should use lazy loading or another documented strategy;
+* audio should not be needlessly duplicated in memory.
+________________
+
+
+101. Resource Cleanup
+Workers and services must release resources when operations finish.
+Particularly:
+* media handles;
+* file streams;
+* model-download handles;
+* HTTP clients;
+* worker threads.
+Application shutdown must not leave partially committed database transactions.
+________________
+
+
+102. Graceful Application Shutdown
+If user attempts to close Sikumon during active processing:
+* display a clear confirmation;
+* avoid unsafe immediate termination.
+Conceptual example:
+A transcription is still running.
+
+
+Closing Sikumon will stop the current operation.
+
+
+[Cancel] [Close Sikumon]
+
+
+If user confirms:
+* stop workers as safely as practical;
+* allow startup recovery to normalize durable states on next launch.
+________________
+
+
+103. Out of Scope
+The following are explicitly outside this product version:
+* live microphone transcription;
+* real-time transcription;
+* recording audio inside Sikumon;
+* automatic speaker diarization;
+* voice recognition;
+* calendar integration;
+* Google Calendar;
+* Outlook Calendar;
+* Zoom integration;
+* Microsoft Teams integration;
+* Google Meet integration;
+* cloud synchronization;
+* cloud audio storage;
+* user accounts;
+* login/authentication system;
+* multi-user collaboration;
+* organization management;
+* web application;
+* browser interface;
+* mobile application;
+* automatic translation;
+* semantic search across meetings;
+* embeddings;
+* vector database;
+* RAG over previous meetings;
+* chatbot over meeting history;
+* automatic email sending;
+* automatic external task creation;
+* task-manager integrations;
+* CRM integrations;
+* automatic meeting recording;
+* collaborative transcript editing;
+* automatic hierarchical/chunked LLM analysis.
+Codex must not introduce these features without an explicit specification change.
+________________
+
+
+104. Implementation Rules for Codex
+Codex must follow these rules.
+1. Do not replace PySide6 with a web UI.
+2. Do not introduce a backend server.
+3. Do not replace local STT with cloud STT.
+4. Do not send audio to OpenAI.
+5. Do not replace the specified Ivrit.ai model silently.
+6. Do not introduce speaker diarization.
+7. Do not introduce Docker.
+8. Do not require CUDA.
+9. Do not introduce unnecessary infrastructure.
+10. Do not introduce external database services.
+11. Do not store secrets in plaintext.
+12. Do not place business logic in UI widgets when it belongs in services.
+13. Do not block the Qt main thread.
+14. Do not treat unvalidated LLM output as application data.
+15. Do not silently truncate transcripts.
+16. Do not silently accept invalid evidence IDs.
+17. Do not overwrite valid analysis before its replacement validates.
+18. Do not destroy transcript data because a network request failed.
+19. Do not expose raw Python tracebacks in normal UI.
+20. Do not claim functionality is complete based only on unit tests.
+21. Do not introduce out-of-scope features.
+22. Prefer the simplest implementation satisfying the requirements.
+23. If a specification requirement creates a technical conflict, document the conflict instead of silently changing the requirement.
+24. If a dependency or model version must be changed, document why.
+25. Keep third-party dependencies reasonable.
+26. Do not perform broad unrelated refactors.
+27. Keep behavior deterministic where correctness depends on validation or persistence.
+28. Do not mark a feature complete until relevant acceptance criteria pass.
+29. Do not hard-code a specific OpenAI model throughout the application.
+30. Do not implement mandatory LLM chunking unless the specification is explicitly expanded.
+________________
+
+
+105. Development Order
+Phase 1 — Application foundation
+* project structure;
+* configuration;
+* application data paths;
+* SQLite initialization;
+* SQLAlchemy models;
+* schema versioning;
+* logging;
+* PySide6 shell;
+* meeting list.
+Phase 2 — Meeting storage
+* new meeting flow;
+* audio validation;
+* local audio copy;
+* persistence;
+* meeting deletion.
+Phase 3 — STT model management
+* model detection;
+* download UI;
+* progress;
+* verification;
+* cancellation;
+* retry.
+Phase 4 — Local transcription
+* faster-whisper integration;
+* Ivrit.ai model;
+* CPU configuration;
+* background worker;
+* timestamped segments;
+* persistence;
+* cancellation;
+* transcript revision.
+Phase 5 — Transcript UI
+* segment-based transcript view;
+* Hebrew RTL;
+* editing;
+* save;
+* revision updates;
+* analysis freshness handling.
+Phase 6 — OpenAI analysis
+* credentials;
+* provider abstraction;
+* Responses API;
+* configured analysis model;
+* Structured Outputs;
+* prompt;
+* Pydantic schema;
+* evidence validation;
+* controlled retry;
+* persistence.
+Phase 7 — Analysis UI
+* summary;
+* decisions;
+* tasks;
+* evidence navigation;
+* empty states;
+* outdated indicator.
+Phase 8 — Failure recovery
+* stale worker states;
+* missing files;
+* offline behavior;
+* API failures;
+* model-download interruption.
+Phase 9 — Packaging
+* PyInstaller;
+* ffmpeg packaging if required;
+* Windows installer;
+* clean-machine validation.
+Phase 10 — End-to-end validation
+* real Hebrew recording;
+* transcript correction;
+* analysis;
+* restart;
+* reanalysis;
+* deletion;
+* target-machine test.
+Codex may adapt internal sequencing when technically justified but must preserve final scope.
+________________
+
+
+106. Definition of Done — Installation
+Product is complete only when:
+* Sikumon installs on Windows 11;
+* normal Windows user can launch it;
+* separate Python installation is not required;
+* IDE is not required;
+* source checkout is not required;
+* terminal startup is not required;
+* browser is not required.
+________________
+
+
+107. Definition of Done — Startup
+* Application starts successfully.
+* Application data directory is created automatically.
+* SQLite database initializes automatically.
+* Database schema version is available.
+* Previous meetings reload.
+* Stale processing states are normalized.
+* Missing internet does not prevent application startup.
+________________
+
+
+108. Definition of Done — Model Management
+* Required Ivrit.ai model is detected if installed.
+* Missing model is detected.
+* User can initiate model download from UI.
+* Download runs without UI freeze.
+* Progress/state is visible.
+* Download can be cancelled.
+* Failed download can be retried.
+* Incomplete model is never treated as installed.
+* Verified model is reused after restart.
+* Exact release revision is documented.
+________________
+
+
+109. Definition of Done — Audio Import
+* WAV import works.
+* MP3 import works.
+* M4A import works.
+* FLAC import works.
+* Invalid/corrupted file produces readable error.
+* Source audio is copied to Sikumon storage.
+* Original source path is no longer required.
+* Removing the original file does not break the meeting.
+* Audio is never uploaded to OpenAI.
+________________
+
+
+110. Definition of Done — Local Transcription
+* faster-whisper is actually used.
+* ivrit-ai/whisper-large-v3-turbo-ct2 is actually used.
+* Hebrew language is explicitly configured.
+* transcription works on CPU.
+* CUDA is not required.
+* transcription works on the 16 GB RAM target.
+* UI remains responsive.
+* active progress/state is visible.
+* user can cancel transcription.
+* transcript is persisted as timestamped segments.
+* each segment has stable evidence ID.
+* transcript revision is stored.
+________________
+
+
+111. Definition of Done — Transcript
+* Hebrew transcript renders correctly.
+* RTL works.
+* timestamps remain readable.
+* user can edit segment text.
+* segment ID cannot accidentally change through editing.
+* segment timestamps remain fixed.
+* segment order remains fixed.
+* edits can be saved.
+* unsaved state is visible.
+* edits survive restart.
+* successful edits increment transcript revision.
+* editing transcript makes older analysis outdated.
+________________
+
+
+112. Definition of Done — OpenAI Analysis
+* analysis cannot start on empty transcript;
+* API key is retrieved securely;
+* only transcript-related text is sent;
+* audio is never sent;
+* Responses API is used;
+* configured supported text model is used;
+* structured output is used where supported;
+* result is validated with Pydantic;
+* evidence IDs are validated;
+* invalid analysis never becomes current;
+* at most one controlled correction retry is performed;
+* failed correction results in recoverable error;
+* previous valid analysis remains intact.
+________________
+
+
+113. Definition of Done — Analysis Results
+* summary is displayed;
+* decisions are displayed;
+* tasks are displayed;
+* responsible person appears only when supported;
+* unsupported responsible person remains null;
+* deadline appears only when supported;
+* unsupported deadline remains null;
+* empty decision list displays correctly;
+* empty task list displays correctly.
+________________
+
+
+114. Definition of Done — Evidence
+* every decision has evidence;
+* every task has evidence;
+* evidence uses valid transcript segment IDs;
+* evidence belongs to the analyzed transcript revision;
+* invalid IDs are not silently accepted;
+* selecting evidence opens/navigates to Transcript;
+* relevant segment scrolls into view;
+* relevant segment is highlighted.
+________________
+
+
+115. Definition of Done — Persistence
+The following survive application restart:
+* meeting;
+* title;
+* local audio reference;
+* transcript;
+* transcript revision;
+* transcript corrections;
+* analysis;
+* decisions;
+* tasks;
+* evidence links;
+* statuses;
+* timestamps.
+________________
+
+
+116. Definition of Done — Reanalysis
+* user can edit transcript after an analysis;
+* UI identifies old analysis as outdated;
+* user can rerun analysis;
+* existing valid analysis remains until replacement succeeds;
+* failed replacement does not destroy existing analysis;
+* new valid analysis becomes current;
+* new analysis records the current transcript revision.
+________________
+
+
+117. Definition of Done — Deletion
+* meeting deletion requires confirmation;
+* active meeting processing prevents deletion;
+* meeting database data is deleted;
+* transcript data is deleted;
+* analysis data is deleted;
+* evidence data is deleted;
+* local meeting recording is deleted;
+* global STT model remains installed;
+* other meetings remain intact;
+* partially missing local files do not crash deletion.
+________________
+
+
+118. Definition of Done — Failure Handling
+The following produce recoverable user-facing behavior:
+* invalid audio;
+* missing model;
+* model-download failure;
+* cancelled model download;
+* STT failure;
+* cancelled transcription;
+* application termination during transcription;
+* missing local audio;
+* no internet;
+* HTTP 401;
+* HTTP 403;
+* HTTP 429;
+* HTTP 5xx;
+* network timeout;
+* malformed structured output;
+* Pydantic validation failure;
+* invalid evidence IDs;
+* transcript too large for the configured analysis model.
+No normal error path should corrupt existing meeting data.
+________________
+
+
+119. Definition of Done — Target Machine
+The complete core workflow must successfully run on:
+Intel Core i7-1355U
+16 GB RAM
+No discrete GPU
+Windows 11 Pro
+
+
+No CUDA installation may be required.
+________________
+
+
+120. Required End-to-End Demonstration Scenario
+Before the project is considered finished, perform this complete scenario successfully.
+1. Use the production installer.
+2. Install Sikumon on the target Windows machine.
+3. Launch Sikumon.
+4. Confirm application starts without Python tooling.
+5. Download the Ivrit.ai model if not already installed.
+6. Close and reopen Sikumon.
+7. Confirm the model is still recognized.
+8. Create a new meeting.
+9. Select a real Hebrew audio recording.
+10. Import it.
+11. Confirm Sikumon uses its local audio copy.
+12. Start local transcription.
+13. Confirm UI stays responsive.
+14. Wait for transcription completion.
+15. Confirm Hebrew transcript appears as timestamped segments.
+16. Correct at least one segment manually.
+17. Save the correction.
+18. Confirm transcript revision changes.
+19. Configure OpenAI credentials if not already configured.
+20. Start AI analysis.
+21. Receive a schema-valid result.
+22. Display summary.
+23. Display at least one valid decision or legitimate empty state.
+24. Display at least one valid task or legitimate empty state.
+25. Confirm responsible-person handling.
+26. Confirm deadline handling.
+27. Select an evidence reference.
+28. Confirm Sikumon navigates to the corresponding transcript segment.
+29. Edit the transcript again.
+30. Save the edit.
+31. Confirm transcript revision changes again.
+32. Confirm previous analysis becomes visibly outdated.
+33. Run analysis again.
+34. Confirm new valid analysis replaces the current result.
+35. Close Sikumon.
+36. Launch Sikumon again.
+37. Confirm:
+   * meeting exists;
+   * transcript corrections exist;
+   * transcript revision is correct;
+   * analysis exists;
+   * evidence navigation works.
+38. Make the original imported source path unavailable.
+39. Confirm meeting still works using Sikumon's local copy.
+40. Disconnect internet.
+41. Confirm meeting browsing and local transcription-related functions remain usable.
+42. Confirm cloud analysis clearly reports that internet is required.
+43. Reconnect internet.
+44. Delete the meeting.
+45. Confirm meeting-specific database data is removed.
+46. Confirm meeting-specific audio is removed.
+47. Confirm global STT model remains installed.
+48. Confirm Sikumon still launches successfully.
+A project that passes automated tests but cannot complete this scenario is not finished.
+________________
+
+
+121. Final Product Success Criterion
+Sikumon is successful when it can be demonstrated to another person without explaining implementation details.
+Expected demonstration:
+I import a Hebrew meeting recording.
+
+
+The recording stays on my computer.
+
+
+Sikumon transcribes it locally.
+
+
+I can correct the transcript.
+
+
+Only transcript text is sent for AI analysis.
+
+
+The application extracts a summary, decisions and tasks.
+
+
+Important decisions and tasks point back to the exact transcript segments that support them.
+
+
+If I correct the transcript, Sikumon tells me that the previous analysis is outdated.
+
+
+I can analyze the transcript again without losing the last valid analysis if something fails.
+
+
+I close Sikumon and everything remains saved locally.
+
+
+The finished application must demonstrate complete product engineering rather than only AI API integration:
+* local Hebrew Speech-to-Text;
+* Ivrit.ai model integration;
+* CPU-only inference;
+* Hebrew-first UX;
+* RTL desktop UI;
+* structured transcript representation;
+* stable evidence anchors;
+* transcript versioning;
+* configurable cloud LLM analysis;
+* structured LLM output;
+* schema validation;
+* hallucination controls;
+* evidence validation;
+* privacy-aware architecture;
+* secure credential handling;
+* local persistence;
+* background processing;
+* cancellation;
+* crash recovery;
+* error handling;
+* Windows packaging;
+* complete end-to-end usability.
